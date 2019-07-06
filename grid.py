@@ -10,13 +10,13 @@ def itergrid(grid):
 @dataclass
 class Tile:
     row: int
-    column: int
+    col: int
     position: Tuple[int] = field(init=False)
     traversable: bool = True
     color: Tuple[int] = field(default_factory=lambda: (0,0,0))
 
     def __post_init__(self):
-        self.position = (self.row, self.column)
+        self.position = (self.row, self.col)
 
 #TODO superclass of character for objects, projectile, agents
 @dataclass
@@ -25,13 +25,13 @@ class Agent(Tile):
     speed: int = 0
 
 class Grid:
-    def __init__(self, rows, columns):
-        self.width = columns 
+    def __init__(self, rows, cols):
+        self.width = cols 
         self.height = rows
-        self.grid = np.empty((rows,columns), dtype=object)
+        self.grid = np.empty((rows,cols), dtype=object)
         for row in range(rows):
-            for column in range(columns):
-                self.grid[row,column] = Tile(row, column, traversable=True)
+            for col in range(cols):
+                self.grid[row,col] = Tile(row, col, traversable=True)
 
     def render(self):
         #print(self.grid)
@@ -44,14 +44,24 @@ class Grid:
                     row_render += ' '
             print(row_render)
 
+    def legal(agent, position):
+        #TODO add different conditial checks based on agent properties
+        legality = self.grid[position].traversable == True 
+        return legality
+
     #TODO generalize?
     def add_agent(self, agent):
-        #print(self.grid[agent.position])
-        if self.grid[agent.position].traversable == True:
+        if self.legal(agent, agent.position):
             self.grid[agent.position] = agent
     
-    def move(self, agent, direction):
+    #TODO store state of grid better (layers)
+    def remove_agent():
         pass
+    
+    def move(self, agent, delta_row, delta_col):
+        if legal(agent, (agent.row + delta_row, agent.col + delta_col)):
+            remove_agent(agent)
+            
 
 
 g = Grid(6,5)
