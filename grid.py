@@ -18,6 +18,10 @@ class Tile:
     def __post_init__(self):
         self.position = (self.row, self.col)
 
+    #build in way to do this?
+    def update(self):
+        self.__post_init__()
+
 #TODO superclass of character for objects, projectile, agents
 @dataclass
 class Agent(Tile):
@@ -44,7 +48,7 @@ class Grid:
                     row_render += ' '
             print(row_render)
 
-    def legal(agent, position):
+    def legal(self, agent, position):
         #TODO add different conditial checks based on agent properties
         legality = self.grid[position].traversable == True 
         return legality
@@ -55,19 +59,30 @@ class Grid:
             self.grid[agent.position] = agent
     
     #TODO store state of grid better (layers)
-    def remove_agent():
-        pass
+    def remove_agent(self, agent):
+        self.grid[agent.position] = Tile(agent.row, agent.col, traversable=True)
+        
     
     def move(self, agent, delta_row, delta_col):
-        if legal(agent, (agent.row + delta_row, agent.col + delta_col)):
-            remove_agent(agent)
+        new_row = agent.row + delta_row
+        new_col = agent.col + delta_col
+        if self.legal(agent, (new_row, new_col)):
+            self.remove_agent(agent)
+            agent.row = new_row
+            agent.col = new_col
+            agent.__post_init__()
+            self.add_agent(agent)
             
 
 
 g = Grid(6,5)
 g.render()
-print('\n\n')
+print('----')
 
 a = Agent(1,1, color = (20,20,20))
 g.add_agent(a)
+g.render()
+print('----')
+
+g.move(a,1,2)
 g.render()
