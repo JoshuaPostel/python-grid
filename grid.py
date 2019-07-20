@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Tuple
 import numpy as np
+import pygame
+import time
 
-
+#TODO
 def itergrid(grid):
     return ()
-
 
 @dataclass
 class Tile:
@@ -13,14 +14,10 @@ class Tile:
     col: int
     position: Tuple[int] = field(init=False)
     traversable: bool = True
-    color: Tuple[int] = field(default_factory=lambda: (0,0,0))
+    color: Tuple[int] = field(default_factory=lambda: (200,0,0))
 
     def __post_init__(self):
         self.position = (self.row, self.col)
-
-    #build in way to do this?
-    def update(self):
-        self.__post_init__()
 
 #TODO superclass of character for objects, projectile, agents
 @dataclass
@@ -37,16 +34,10 @@ class Grid:
             for col in range(cols):
                 self.grid[row,col] = Tile(row, col, traversable=True)
 
-    def render(self):
-        #print(self.grid)
+    def render(self, screen):
         for row in self.grid:
-            row_render = ''
             for tile in row:
-                if tile.color == (0,0,0):
-                    row_render += '#'
-                else:
-                    row_render += ' '
-            print(row_render)
+                pygame.draw.rect(screen, tile.color, (tile.row*100,tile.col*100,100,100))
 
     def legal(self, agent, position):
         #TODO add different conditial checks based on agent properties
@@ -74,15 +65,40 @@ class Grid:
             self.add_agent(agent)
             
 
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((1000,1000))
 
-g = Grid(6,5)
-g.render()
-print('----')
+    g = Grid(6,4)
+    a = Agent(1,1, color = (100,200,100))
+    g.add_agent(a)
 
-a = Agent(1,1, color = (20,20,20))
-g.add_agent(a)
-g.render()
-print('----')
+    playing = True
+    while playing:
+        for event in pygame.event.get():
+            if event.type  == pygame.QUIT:
+                pygame.display.quit()
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN:
+                g.move(a,1,0)
+                g.render(screen)
 
-g.move(a,1,2)
-g.render()
+        pygame.display.update()
+
+
+if __name__ == '__main__':
+    main()
+
+
+#g = Grid(6,5)
+#g.render()
+#print('----')
+#
+#a = Agent(1,1, color = (20,20,20))
+#g.add_agent(a)
+#g.render()
+#print('----')
+#
+#g.move(a,1,2)
+#g.render()
