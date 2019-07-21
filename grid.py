@@ -3,6 +3,7 @@ from typing import Tuple
 import numpy as np
 import pygame
 import time
+import random
 
 #TODO
 def itergrid(grid):
@@ -25,11 +26,17 @@ class Agent(Tile):
     height: int = 0
     speed: int = 0
 
+#multi tile agent?
+
+
+
 class Grid:
-    def __init__(self, rows, cols):
+    def __init__(self, rows, cols, tile_size, boarder_size):
         self.width = cols 
         self.height = rows
         self.grid = np.empty((rows,cols), dtype=object)
+        self.tile_size = tile_size
+        self.boarder_size = boarder_size
         for row in range(rows):
             for col in range(cols):
                 self.grid[row,col] = Tile(row, col, traversable=True)
@@ -37,10 +44,22 @@ class Grid:
     def render(self, screen):
         for row in self.grid:
             for tile in row:
-                pygame.draw.rect(screen, tile.color, (tile.row*100,tile.col*100,100,100))
+                pygame.draw.rect(screen, tile.color,
+                        ((1 + tile.row) * self.tile_size + self.boarder_size, 
+                         (1 + tile.col) * self.tile_size + self.boarder_size,
+                         self.tile_size - self.boarder_size,
+                         self.tile_size - self.boarder_size))
 
     def legal(self, agent, position):
-        #TODO add different conditial checks based on agent properties
+        if any(cord < 0 for cord in position):
+            return False
+        try:
+            #make sure grid[position] exists
+            self.grid[position]
+        except:
+            return False
+
+        #TODO add different conditial checks based on agent properties  
         legality = self.grid[position].traversable == True 
         return legality
 
@@ -63,15 +82,38 @@ class Grid:
             agent.col = new_col
             agent.__post_init__()
             self.add_agent(agent)
+
+    def rotate(self):
+        pass
             
+
+actions = {
+        b'h': (-1,0),
+        b'j': (0,1),
+        b'k': (0,-1),
+        b'l': (1,0),}
 
 def main():
     pygame.init()
     screen = pygame.display.set_mode((1000,1000))
 
-    g = Grid(6,4)
-    a = Agent(1,1, color = (100,200,100))
-    g.add_agent(a)
+    board_width = 10
+    board_length = 50
+    g = Grid(board_width, board_length, 15, 2)
+    player = Agent(1, 1, color = (100, 200, 100))
+    g.add_agent(player)
+
+    for i in range(25):
+        agent = Agent(
+                random.randrange(board_width),
+                random.randrange(board_length),
+                color = (100,100,200),
+                traversable = False)
+
+        g.add_agent(agent)
+   
+    rock = Agent(2, 3, color = (100,100,200), traversable = False)
+    g.add_agent(rock)
 
     playing = True
     while playing:
@@ -81,7 +123,8 @@ def main():
                 pygame.quit()
                 exit()
             elif event.type == pygame.KEYDOWN:
-                g.move(a,1,0)
+                action = actions.get(bytes([event.key]))
+                g.move(player,action[0],action[1])
                 g.render(screen)
 
         pygame.display.update()
@@ -89,16 +132,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-#g = Grid(6,5)
-#g.render()
-#print('----')
-#
-#a = Agent(1,1, color = (20,20,20))
-#g.add_agent(a)
-#g.render()
-#print('----')
-#
-#g.move(a,1,2)
-#g.render()
