@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import Tuple, List
 import numpy as np
 import pygame
 import time
@@ -15,20 +15,20 @@ class Tile:
     col: int
     position: Tuple[int] = field(init=False)
     traversable: bool = True
-    color: Tuple[int] = field(default_factory=lambda: (200,0,0))
+    color: Tuple[int] = field(default_factory=lambda: (200,100,100))
+    height: int = 0
 
     def __post_init__(self):
         self.position = (self.row, self.col)
 
 #TODO superclass of character for objects, projectile, agents
 @dataclass
-class Agent(Tile):
-    height: int = 0
+class Agent():
+    tiles: List[Tile]
     speed: int = 0
 
-#multi tile agent?
-
-
+    def __post_init__(self):
+        self.positions = (tile.position for tile in self.tiles)
 
 class Grid:
     def __init__(self, rows, cols, tile_size, boarder_size):
@@ -50,42 +50,50 @@ class Grid:
                          self.tile_size - self.boarder_size,
                          self.tile_size - self.boarder_size))
 
-    def legal(self, agent, position):
+    def legal_tile(self, tile, position):
         if any(cord < 0 for cord in position):
+            print(tile, 'FIRST')
             return False
         try:
             #make sure grid[position] exists
             self.grid[position]
         except:
+            print(tile, 'SECOND')
+            print(position)
+            print(self.grid.shape)
             return False
 
         #TODO add different conditial checks based on agent properties  
         legality = self.grid[position].traversable == True 
         return legality
 
+    def legal_agent(self, agent, positions):
+        #assert len(agent.tiles) == len(positions)
+        return all(self.legal_tile(tile, position) for tile, position in zip(agent.tiles, positions))
+
     #TODO generalize?
     def add_agent(self, agent):
-        if self.legal(agent, agent.position):
-            self.grid[agent.position] = agent
+        if self.legal_agent(agent, agent.positions):
+            for tile in agent.tiles:
+                self.grid[tile.position] = tile 
     
     #TODO store state of grid better (layers)
     def remove_agent(self, agent):
-        self.grid[agent.position] = Tile(agent.row, agent.col, traversable=True)
-        
+        for tile in agent.tiles:
+            self.grid[tile.position] = Tile(tile.row, tile.col, traversable=True)
     
-    def move(self, agent, delta_row, delta_col):
-        new_row = agent.row + delta_row
-        new_col = agent.col + delta_col
-        if self.legal(agent, (new_row, new_col)):
-            self.remove_agent(agent)
-            agent.row = new_row
-            agent.col = new_col
-            agent.__post_init__()
-            self.add_agent(agent)
+    def move_agent(self, agent, row_deltas, col_deltas):
+        #assert len(agent.tiles) == len(row_deltas) == len(col_deltas)
+        if legal_agent(agent, (row_deltas, col_deltas)):
+            for tile, row_delta, col_delta in zip(agent.tiles, row_deltas, col_deltas):
+                self.remove_tile(tile)
+                tile.row = tile.row + row_delta
+                tile.col = tile.col + col_delta 
+                tile.__post_init__()
+                self.add_agent(agent)
 
     def rotate(self):
         pass
-            
 
 actions = {
         b'h': (-1,0),
@@ -97,24 +105,30 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((1000,1000))
 
-    board_width = 10
+    board_width = 20
     board_length = 50
     g = Grid(board_width, board_length, 15, 2)
-    player = Agent(1, 1, color = (100, 200, 100))
+    player = Agent([Tile(1, 1, color = (100, 200, 100))])
     g.add_agent(player)
 
-    for i in range(25):
-        agent = Agent(
-                random.randrange(board_width),
-                random.randrange(board_length),
-                color = (100,100,200),
-                traversable = False)
+    mplayer = Agent([
+        Tile(10, 10, color = (0,100,0), traversable = False),
+        Tile(10, 11, color = (0,100,0), traversable = False),
+        Tile(11, 10, color = (0,100,0), traversable = False),
+        Tile(11, 11, color = (0,100,0), traversable = False),
+        ])
 
-        g.add_agent(agent)
+    g.add_agent(mplayer)
+
+#    for i in range(25):
+#        agent = Agent([Tile(
+#                random.randrange(board_width),
+#                random.randrange(board_length),
+#                color = (100,100,200),
+#                traversable = False)])
+#
+#        g.add_agent(agent)
    
-    rock = Agent(2, 3, color = (100,100,200), traversable = False)
-    g.add_agent(rock)
-
     playing = True
     while playing:
         for event in pygame.event.get():
@@ -124,7 +138,8 @@ def main():
                 exit()
             elif event.type == pygame.KEYDOWN:
                 action = actions.get(bytes([event.key]))
-                g.move(player,action[0],action[1])
+                if action:
+                    g.move(player,action[0],action[1])
                 g.render(screen)
 
         pygame.display.update()
