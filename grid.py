@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 import time
 import random
+import copy
 
 #TODO
 def itergrid(grid):
@@ -28,7 +29,7 @@ class Agent():
     speed: int = 0
 
     def __post_init__(self):
-        self.positions = (tile.position for tile in self.tiles)
+        self.positions = [tile.position for tile in self.tiles]
 
 class Grid:
     def __init__(self, rows, cols, tile_size, boarder_size):
@@ -59,17 +60,18 @@ class Grid:
             self.grid[position]
         except:
             print(tile, 'SECOND')
-            print(position)
-            print(self.grid.shape)
             return False
 
         #TODO add different conditial checks based on agent properties  
         legality = self.grid[position].traversable == True 
+        if not legality:
+            print(tile, 'THIRD')
+
         return legality
 
     def legal_agent(self, agent, positions):
         #assert len(agent.tiles) == len(positions)
-        return all(self.legal_tile(tile, position) for tile, position in zip(agent.tiles, positions))
+        return all([self.legal_tile(tile, position) for tile, position in zip(agent.tiles, positions)])
 
     #TODO generalize?
     def add_agent(self, agent):
@@ -84,13 +86,29 @@ class Grid:
     
     def move_agent(self, agent, row_deltas, col_deltas):
         #assert len(agent.tiles) == len(row_deltas) == len(col_deltas)
-        if legal_agent(agent, (row_deltas, col_deltas)):
-            for tile, row_delta, col_delta in zip(agent.tiles, row_deltas, col_deltas):
-                self.remove_tile(tile)
-                tile.row = tile.row + row_delta
-                tile.col = tile.col + col_delta 
-                tile.__post_init__()
-                self.add_agent(agent)
+        new_agent = copy.deepcopy(agent)
+        
+        for tile, row_delta, col_delta in zip(new_agent.tiles, row_deltas, col_deltas):
+            tile.row = tile.row + row_delta
+            tile.col = tile.col + col_delta 
+            tile.__post_init__()
+
+        new_agent.__post_init__()
+        if self.legal_agent(new_agent, new_agent.positions):
+            self.remove_agent(agent)
+            self.add_agent(new_agent)
+            return new_agent
+        else:
+            return agent
+
+
+
+    def translate(self, agent, direction):
+        ntiles = len(agent.tiles)
+        row_deltas = [direction[0] for x in range(ntiles)]
+        col_deltas = [direction[1] for x in range(ntiles)]
+        new_agent = self.move_agent(agent, row_deltas, col_deltas)
+        return new_agent
 
     def rotate(self):
         pass
@@ -108,7 +126,8 @@ def main():
     board_width = 20
     board_length = 50
     g = Grid(board_width, board_length, 15, 2)
-    player = Agent([Tile(1, 1, color = (100, 200, 100))])
+    player = Agent([Tile(1, 1, color = (100, 200, 100)),
+                    Tile(1, 2, color = (100, 200, 100))])
     g.add_agent(player)
 
     mplayer = Agent([
@@ -139,7 +158,7 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 action = actions.get(bytes([event.key]))
                 if action:
-                    g.move(player,action[0],action[1])
+                    player = g.translate(player,action)
                 g.render(screen)
 
         pygame.display.update()
