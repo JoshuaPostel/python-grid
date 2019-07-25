@@ -55,24 +55,24 @@ class Grid:
 
     def legal_tile(self, tile, position):
         if any(cord < 0 for cord in position):
-            print(tile, 'FIRST')
+            #print(tile, 'FIRST')
             return False
         try:
             #make sure grid[position] exists
             self.grid[position]
         except:
-            print(tile, 'SECOND')
+            #print(tile, 'SECOND')
             return False
 
         #TODO add different conditial checks based on agent properties  
         legality = self.grid[position].traversable == True 
         if not legality:
-            print(tile, 'THIRD')
+            #print(tile, 'THIRD')
+            pass
 
         return legality
 
     def legal_agent(self, agent):
-        #assert len(agent.tiles) == len(positions)
         return all([self.legal_tile(tile, position) for tile, position in zip(agent.tiles, agent.positions)])
 
     #TODO generalize?
@@ -121,8 +121,7 @@ class Grid:
             normalized_position = position - center
             normalized_rotation = normalized_position * rotation_matrix
             rotation = normalized_rotation + center
-            tile.row, tile.col = (cordinate for cordinate in 
-                    rotation.flatten().tolist()[0])
+            tile.row, tile.col = (cordinate for cordinate in rotation.tolist()[0])
             tile.__post_init__()
         
         new_agent.__post_init__()
@@ -153,8 +152,11 @@ def main():
     board_width = 20
     board_length = 50
     g = Grid(board_width, board_length, 15, 2)
-    player = Agent([Tile(1, 1, color = (100, 200, 100), center = True),
-                    Tile(1, 2, color = (100, 200, 100))])
+    player = Agent([Tile(1, 1, color = (100, 200, 100)),
+                    Tile(1, 2, color = (100, 200, 100)),
+                    Tile(1, 3, color = (100, 200, 100)),
+                    Tile(2, 2, color = (100, 200, 100), center = True),
+                    ])
     g.add_agent(player)
 
     for i in range(25):
@@ -183,13 +185,10 @@ def main():
                 pygame.quit()
                 exit()
             elif event.type == pygame.KEYDOWN:
-                #print(bytes([event.key]))
                 translate_action = translate_controls.get(bytes([event.key]))
-                #print(translate_action)
                 if translate_action:
                     player = g.translate(player, translate_action)
                 rotate_action = rotate_controls.get(bytes([event.key]))
-                #print(rotate_action)
                 if rotate_action is None:
                     pass
                 else:
