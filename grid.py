@@ -86,35 +86,27 @@ class Grid:
         for tile in agent.tiles:
             self.grid[tile.position] = Tile(tile.row, tile.col, traversable=True)
    
-    #TODO rework to acomidate rotate function
-    def move_agent(self, agent, row_deltas, col_deltas):
-        new_agent = copy.deepcopy(agent)
-        
-        for tile, row_delta, col_delta in zip(new_agent.tiles, row_deltas, col_deltas):
-            tile.row += row_delta
-            tile.col += col_delta 
-            tile.__post_init__()
-
-        new_agent.__post_init__()
-
-        if self.legal_agent(new_agent):
+    def move_agent(self, agent, moved_agent):
+        if self.legal_agent(moved_agent):
             self.remove_agent(agent)
-            self.add_agent(new_agent)
-            return new_agent
+            self.add_agent(moved_agent)
+            return moved_agent
         else:
             return agent
 
     def translate(self, agent, direction):
-        ntiles = len(agent.tiles)
-        row_deltas = [direction[0] for x in range(ntiles)]
-        col_deltas = [direction[1] for x in range(ntiles)]
-        new_agent = self.move_agent(agent, row_deltas, col_deltas)
-        return new_agent
-
-    def rotate(self, agent, rotation_matrix):
-        center = np.array(agent.center)
         new_agent = copy.deepcopy(agent)
+        for tile in new_agent.tiles:
+            tile.row += direction[0]
+            tile.col += direction[1] 
+            tile.__post_init__()
+
+        new_agent.__post_init__()
+        return self.move_agent(agent, new_agent)
         
+    def rotate(self, agent, rotation_matrix):
+        new_agent = copy.deepcopy(agent)
+        center = np.array(agent.center)
         #if want to be fancy/efficent, vectorize this 
         for tile in new_agent.tiles:
             position = np.array(tile.position)
@@ -125,13 +117,7 @@ class Grid:
             tile.__post_init__()
         
         new_agent.__post_init__()
-
-        if self.legal_agent(new_agent):
-            self.remove_agent(agent)
-            self.add_agent(new_agent)
-            return new_agent
-        else:
-            return agent
+        return self.move_agent(agent, new_agent)
 
 
 
